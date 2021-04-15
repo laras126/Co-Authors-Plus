@@ -11,7 +11,8 @@ jobs:
 
       - uses: php-actions/composer@v5
 
-      - name: PHPUnit Tests
-        uses: php-actions/phpunit@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          version: 7.5.20
+          php-version: '7.4'
+          tools: phpunit
