@@ -9,7 +9,8 @@ jobs:
       matrix:
         operating-system: [ubuntu-latest]
         php-versions: ['7.2', '7.3', '7.4']
-    name: PHP ${{ matrix.php-versions }} Test on ${{ matrix.operating-system }}
+        name: PHP ${{ matrix.php-versions }} test on ${{ matrix.operating-system }}
+        
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -26,11 +27,19 @@ jobs:
       - name: Check PHP Version
         run: php -v
 
-      - name: Composer install
+      - name: Install Composer
         run: composer install --optimize-autoloader --prefer-dist
+        
+      - name: Install MySQL
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          mysql database: 'wordpress_test'
+          mysql root password: 'root'
+          mysql user: 'root'
+          mysql password: 'root'
 
-      - name: Install WP Tests
+      - name: Install WordPress test environment
         run: bash bin/install-wp-tests.sh wordpress_test root root localhost latest
 
-      - name: phpunit tests
+      - name: Execute PHPUnit tests
         run: ./vendor/bin/phpunit
