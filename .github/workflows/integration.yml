@@ -16,3 +16,8 @@ jobs:
         with:
           php-version: '7.4'
           tools: phpunit
+               
+      - name: PHPUnit Tests
+        uses: php-actions/phpunit@v2
+        with:
+          version: '7.5.20'
