@@ -21,4 +21,4 @@ jobs:
         uses: php-actions/phpunit@v2
         with:
           version: '7.5.20'
-          php-version: '7.4'
+          php_version: '7.4'
