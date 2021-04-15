@@ -1,27 +1,36 @@
-name: Integration
+name: CI
 
 on: [push]
 
 jobs:
-  build-test:
-    runs-on: ubuntu-latest
-
+  run:
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        operating-system: [ubuntu-latest]
+        php-versions: ['7.2', '7.3', '7.4']
+    name: PHP ${{ matrix.php-versions }} Test on ${{ matrix.operating-system }}
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: php-actions/composer@v5
+      - name: Checkout
+        uses: actions/checkout@v1
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@v1
         with:
-          php-version: '7.4'
-          tools: phpunit
+          php-version: ${{ matrix.php-versions }}
+          extension-csv: mbstring, intl #optional, setup extensions
+          ini-values-csv: post_max_size=256M, short_open_tag=On #optional, setup php.ini configuration
+          coverage: xdebug #optional, setup coverage driver
+          pecl: false #optional, setup PECL
 
-      - name: Setup WordPress environment for tests
+      - name: Check PHP Version
+        run: php -v
+
+      - name: Composer install
+        run: composer install --optimize-autoloader --prefer-dist
+
+      - name: Install WP Tests
         run: bash bin/install-wp-tests.sh wordpress_test root root localhost latest
-        
-      - name: Run PHPUnit tests
-        uses: php-actions/phpunit@v2
-        with:
-          version: '7.5.20'
-          php_version: '7.4'
+
+      - name: phpunit tests
+        run: ./vendor/bin/phpunit
