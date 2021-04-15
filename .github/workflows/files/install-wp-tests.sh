@@ -1,112 +1,99 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-if [ $# -lt 3 ]; then
-	echo "usage: $0 <db-name> <db-user> <db-pass> [db-host] [wp-version]"
-	exit 1
+## Environment used by this script:
+#
+# mysql must be listening on 127.0.0.1:3306
+# `composer global` will be run!
+# ~/.my.cnf will be written!
+#
+# Required:
+# - PHP_VERSION: Version of PHP in use.
+# - WP_BRANCH: Version of WordPress to check out.
+#
+# Other:
+# - GITHUB_PATH: File written to if set to propagate composer path.
+
+set -eo pipefail
+
+# Add global composer bin dir into PATH
+COMPOSER_BIN_DIR=$(composer global config --absolute --quiet bin-dir)
+export PATH="$COMPOSER_BIN_DIR:$PATH"
+
+# Update path for subsequent Github Action steps
+if [[ -n "$GITHUB_PATH" ]]; then
+	echo "$COMPOSER_BIN_DIR" >> "$GITHUB_PATH"
 fi
 
-DB_NAME=$1
-DB_USER=$2
-DB_PASS=$3
-DB_HOST=${4-localhost}
-WP_VERSION=${5-latest}
-
-WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
-WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress/}
-
-download() {
-    if [ `which curl` ]; then
-        curl -s "$1" > "$2";
-    elif [ `which wget` ]; then
-        wget -nv -O "$2" "$1"
-    fi
-}
-
-if [[ $WP_VERSION =~ [0-9]+\.[0-9]+(\.[0-9]+)? ]]; then
-	WP_TESTS_TAG="tags/$WP_VERSION"
+echo "::group::Installing PHPUnit"
+if [[ "${PHP_VERSION:0:2}" == "8." ]]; then
+	composer global require "phpunit/phpunit=7.5.*" --ignore-platform-reqs
 else
-	# http serves a single offer, whereas https serves multiple. we only want one
-	download http://api.wordpress.org/core/version-check/1.7/ /tmp/wp-latest.json
-	grep '[0-9]+\.[0-9]+(\.[0-9]+)?' /tmp/wp-latest.json
-	LATEST_VERSION=$(grep -o '"version":"[^"]*' /tmp/wp-latest.json | sed 's/"version":"//')
-	if [[ -z "$LATEST_VERSION" ]]; then
-		echo "Latest WordPress version could not be found"
-		exit 1
-	fi
-	WP_TESTS_TAG="tags/$LATEST_VERSION"
+	composer global require "phpunit/phpunit=5.7.* || 6.5.* || 7.5.*"
 fi
+echo "::endgroup::"
 
-set -ex
+echo "::group::Setting up MySQL"
+cat <<EOF > ~/.my.cnf
+[client]
+host=127.0.0.1
+port=3306
+user=root
+password=root
+EOF
+chmod 0600 ~/.my.cnf
+mysql -e "set global wait_timeout = 3600;"
+mysql -e "CREATE DATABASE wordpress_tests;"
+echo "::endgroup::"
 
-install_wp() {
+echo "::group::Preparing WordPress from \"$WP_BRANCH\" branch";
+case "$WP_BRANCH" in
+	master)
+		git clone --depth=1 --branch master git://develop.git.wordpress.org/ /tmp/wordpress-master
+		;;
+	latest)
+		git clone --depth=1 --branch "$(php ./tools/get-wp-version.php)" git://develop.git.wordpress.org/ /tmp/wordpress-latest
+		;;
+	previous)
+		# We hard-code the version here because there's a time near WP releases where
+		# we've dropped the old 'previous' but WP hasn't actually released the new 'latest'
+		git clone --depth=1 --branch 5.6 git://develop.git.wordpress.org/ /tmp/wordpress-previous
+		;;
+esac
+echo "::endgroup::"
 
-	if [ -d $WP_CORE_DIR ]; then
-		return;
-	fi
+# Don't symlink, it breaks when copied later.
+export COMPOSER_MIRROR_PATH_REPOS=true
 
-	mkdir -p $WP_CORE_DIR
-
-	if [ $WP_VERSION == 'latest' ]; then
-		local ARCHIVE_NAME='latest'
+BASE="$(pwd)"
+for PLUGIN in projects/plugins/*/composer.json; do
+	DIR="${PLUGIN%/composer.json}"
+	NAME="$(basename "$DIR")"
+	echo "::group::Installing plugin $NAME into WordPress"
+	cd "$DIR"
+	if [[ ! -f "composer.lock" ]]; then
+		echo 'No composer.lock, running `composer update`'
+		composer update
+	elif composer check-platform-reqs --lock; then
+		echo 'Platform reqs pass, running `composer install`'
+		composer install
 	else
-		local ARCHIVE_NAME="wordpress-$WP_VERSION"
+		echo 'Platform reqs failed, running `composer update`'
+		composer update
 	fi
+	cd "$BASE"
 
-	download https://wordpress.org/${ARCHIVE_NAME}.tar.gz  /tmp/wordpress.tar.gz
-	tar --strip-components=1 -zxmf /tmp/wordpress.tar.gz -C $WP_CORE_DIR
+	cp -r "$DIR" "/tmp/wordpress-$WP_BRANCH/src/wp-content/plugins/$NAME"
+	# Plugin dir for tests in WP >= 5.6-beta1
+	ln -s "/tmp/wordpress-$WP_BRANCH/src/wp-content/plugins/$NAME" "/tmp/wordpress-$WP_BRANCH/tests/phpunit/data/plugins/$NAME"
+	echo "::endgroup::"
+done
 
-	download https://raw.github.com/markoheijnen/wp-mysqli/master/db.php $WP_CORE_DIR/wp-content/db.php
-}
+cd "/tmp/wordpress-$WP_BRANCH"
 
-install_test_suite() {
-	# portable in-place argument for both GNU sed and Mac OSX sed
-	if [[ $(uname -s) == 'Darwin' ]]; then
-		local ioption='-i .bak'
-	else
-		local ioption='-i'
-	fi
+cp wp-tests-config-sample.php wp-tests-config.php
+sed -i "s/youremptytestdbnamehere/wordpress_tests/" wp-tests-config.php
+sed -i "s/yourusernamehere/root/" wp-tests-config.php
+sed -i "s/yourpasswordhere/root/" wp-tests-config.php
+sed -i "s/localhost/127.0.0.1/" wp-tests-config.php
 
-	# set up testing suite if it doesn't yet exist
-	if [ ! -d $WP_TESTS_DIR ]; then
-		# set up testing suite
-		mkdir -p $WP_TESTS_DIR
-		svn co --quiet https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/includes/ $WP_TESTS_DIR/includes
-	fi
-
-	cd $WP_TESTS_DIR
-
-	if [ ! -f wp-tests-config.php ]; then
-		download https://develop.svn.wordpress.org/${WP_TESTS_TAG}/wp-tests-config-sample.php "$WP_TESTS_DIR"/wp-tests-config.php
-		sed $ioption "s:dirname( __FILE__ ) . '/src/':'$WP_CORE_DIR':" "$WP_TESTS_DIR"/wp-tests-config.php
-		sed $ioption "s/youremptytestdbnamehere/$DB_NAME/" "$WP_TESTS_DIR"/wp-tests-config.php
-		sed $ioption "s/yourusernamehere/$DB_USER/" "$WP_TESTS_DIR"/wp-tests-config.php
-		sed $ioption "s/yourpasswordhere/$DB_PASS/" "$WP_TESTS_DIR"/wp-tests-config.php
-		sed $ioption "s|localhost|${DB_HOST}|" "$WP_TESTS_DIR"/wp-tests-config.php
-	fi
-
-}
-
-install_db() {
-	# parse DB_HOST for port or socket references
-	local PARTS=(${DB_HOST//\:/ })
-	local DB_HOSTNAME=${PARTS[0]};
-	local DB_SOCK_OR_PORT=${PARTS[1]};
-	local EXTRA=""
-
-	if ! [ -z $DB_HOSTNAME ] ; then
-		if [ $(echo $DB_SOCK_OR_PORT | grep -e '^[0-9]\{1,\}$') ]; then
-			EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp"
-		elif ! [ -z $DB_SOCK_OR_PORT ] ; then
-			EXTRA=" --socket=$DB_SOCK_OR_PORT"
-		elif ! [ -z $DB_HOSTNAME ] ; then
-			EXTRA=" --host=$DB_HOSTNAME --protocol=tcp"
-		fi
-	fi
-
-	# create database
-	mysqladmin create $DB_NAME --user="$DB_USER" --password="$DB_PASS"$EXTRA
-}
-
-install_wp
-install_test_suite
-install_db
+exit 0;
