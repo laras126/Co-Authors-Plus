@@ -32,7 +32,6 @@ jobs:
       - name: Install MySQL
         uses: mirromutth/mysql-action@v1.1
         with:
-          mysql database: 'wordpress_test'
           mysql root password: 'root'
           mysql user: 'root'
           mysql password: 'root'
