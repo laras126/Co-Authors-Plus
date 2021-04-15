@@ -16,8 +16,11 @@ jobs:
         with:
           php-version: '7.4'
           tools: phpunit
-               
-      - name: PHPUnit Tests
+
+      - name: Setup WordPress environment for tests
+        run: .github/files/install-wp-tests.sh
+        
+      - name: Run PHPUnit tests
         uses: php-actions/phpunit@v2
         with:
           version: '7.5.20'
