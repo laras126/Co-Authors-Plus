@@ -8,10 +8,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [ '8.1', '8.0', '7.4', '7.3', '7.2', '7.1', '7.0', '5.6' ]
-        wordpress: [ '5.7', '5.6', '5.5' ]
+        php: [ '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0' ]
+        wordpress: [ '5.5', '5.6', '5.7'  ]
 
-    name: WordPress ${{ matrix.wordpress }} with PHP ${{ matrix.php }}
+    name: WP ${{ matrix.wordpress }} on PHP ${{ matrix.php }}
     steps:
       - uses: actions/checkout@v2
 
@@ -25,12 +25,26 @@ jobs:
 
       - name: Switch to use mysql_native_password for PHP < 7.4
         if: ${{ matrix.php < 7.4 }}
-        # Info https://www.php.net/manual/en/mysqli.requirements.php
         run: mysql -u root -p"root" -e "ALTER USER 'root'@localhost IDENTIFIED WITH mysql_native_password BY 'root'";  
                
       - name: Install WordPress environment
         run: bash bin/install-wp-tests.sh wordpress_tests root root localhost ${{ matrix.wordpress }}
 
       - name: Execute PHPUnit tests
-        if: ${{ matrix.php >= 7.1 }}
+        if: ${{ matrix.php >= 7.1 && matrix.php < 8.0 }}
         run: phpunit
+
+      - name: Install PHPCS
+        run: git clone -b master https://github.com/WordPress/WordPress-Coding-Standards.git ${{ github.workspace }}/wpcs
+
+      - name: Install PHPCompatibility
+          run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibility.git ${{ github.workspace }}/PHPCompatibility
+
+      - name: Install PHPCompatibilityWP
+          run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibilityWP.git ${{ github.workspace }}/PHPCompatibilityWP
+
+      - name: Check PHPCS
+        run: |
+          phpcs --config-set installed_paths ${{ github.workspace }}/wpcs,${{ github.workspace }}/PHPCompatibility,${{ github.workspace }}/PHPCompatibilityWP
+          phpcs -i
+          phpcs -q --report=checkstyle . | cs2pr 
