@@ -12,9 +12,9 @@ jobs:
 #            phpunit: 9.0
           - php: 7.4
             phpunit: 7.5.20
-          - php: 7.3
-            phpunit: 7.5.20
-#          - php: 7.1
+#          - php: 7.3
+#            phpunit: 7.5.20
+##          - php: 7.1
 #            phpunit: 7.5.20
 #          - php: 7.0
 #            phpunit: 5.0
@@ -39,6 +39,3 @@ jobs:
       - name: Execute PHPUnit tests
         if: ${{ matrix.php >= 7.1 }}
         run: phpunit
-
-      - name: Stop MySQL service
-        run: sudo /etc/init.d/mysql stop
