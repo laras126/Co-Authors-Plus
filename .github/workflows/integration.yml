@@ -19,6 +19,8 @@ jobs:
 #        include:
 #          - php: '8.1'
 #            phpunit-versions: ['7.5.20']
+    container:
+      image: junaidbhura/wp-tests:php-${{ matrix.php-version }}
     services:
       mysql:
         image: mysql:5.7.27
