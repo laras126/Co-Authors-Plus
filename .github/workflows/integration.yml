@@ -33,26 +33,13 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: phpunit:${{ matrix.phpunit }}
 
+      - name: Create MySQL database
+        run: |
+          sudo /etc/init.d/mysql start
+          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
+
       - name: Install WordPress environment
         run: bash bin/install-wp-tests.sh wordpress_tests root root
-
-#      - name: Install WordPress environment
-#        run: |
-#          export WP_DEVELOP_DIR=/tmp/wordpress-tests-lib/
-#          git clone --depth=50 --branch="${{ matrix.wordpress }}" git://develop.git.wordpress.org/ /tmp/wordpress-tests-lib
-#          cd ..
-#          cp -r "${GITHUB_REPOSITORY#*/}" "/tmp/wordpress-tests-lib/src/wp-content/plugins/co-authors-plus"
-#          cd /tmp/wordpress-tests-lib/
-#          pwd
-#          cp wp-tests-config-sample.php wp-tests-config.php
-#          sed -i "s/youremptytestdbnamehere/wordpress_tests/" wp-tests-config.php
-#          sed -i "s/yourusernamehere/root/" wp-tests-config.php
-#          sed -i "s/yourpasswordhere/root/" wp-tests-config.php
-
-#      - name: Create MySQL database
-#        run: |
-#          sudo /etc/init.d/mysql start
-#          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
 
       - name: Execute PHPUnit tests
         run: phpunit
