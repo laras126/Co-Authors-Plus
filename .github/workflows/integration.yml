@@ -31,8 +31,8 @@ jobs:
       - name: Check PHP Version
         run: php -v
 
-      - name: Install PHPUnit
-        uses: php-actions/phpunit@v2
+#      - name: Install PHPUnit
+#        uses: php-actions/phpunit@v2
 
       - name: Check PHPUnit version
         run: phpunit --version
