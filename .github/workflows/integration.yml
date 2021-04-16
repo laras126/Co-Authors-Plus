@@ -46,6 +46,5 @@ jobs:
       - name: Check PHPCS
         run: |
           phpcs --config-set installed_paths ${{ github.workspace }}/wpcs
-#          phpcs --config-set installed_paths ${{ github.workspace }}/wpcs,${{ github.workspace }}/PHPCompatibility,${{ github.workspace }}/PHPCompatibilityWP
           phpcs -i
           phpcs -q --report=checkstyle . | cs2pr 
