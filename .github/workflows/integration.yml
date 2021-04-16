@@ -33,10 +33,10 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: phpunit:${{ matrix.phpunit }}
 
-      - name: Create MySQL database
+      - name: Start MySQL service
         run: |
           sudo /etc/init.d/mysql start
-          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
+#          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
 
       - name: Install WordPress environment
         run: bash bin/install-wp-tests.sh wordpress_tests root root
