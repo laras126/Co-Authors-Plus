@@ -1,30 +1,27 @@
-name: CI
+name: PHPUnit
 
 on: [push]
 
 jobs:
-  build-test:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
+          - php: 8.0
+            phpunit: 9.0
           - php: 7.4
-            wordpress: master
             phpunit: 7.5.20
-#          - php: 7.3
-#            wordpress: master
-#            phpunit: 6.5.14
-#          - php: 7.1
-#            wordpress: master
-#            phpunit: 6.5.14
-#          - php: 7.0.33
-#            wordpress: 4.9
-#            phpunit: 6.5.14
-#          - php: 5.6
-#            wordpress: 4.7
-#            phpunit: 5.0
+          - php: 7.3
+            phpunit: 7.5.20
+          - php: 7.1
+            phpunit: 7.5.20
+          - php: 7.0
+            phpunit: 5.0
+          - php: 5.6
+            phpunit: 5.0
 
-    name: PHP ${{ matrix.php }} tests in WP ${{ matrix.wordpress }}
+    name: PHP ${{ matrix.php }}
     steps:
       - uses: actions/checkout@v2
 
@@ -36,10 +33,10 @@ jobs:
       - name: Start MySQL service
         run: |
           sudo /etc/init.d/mysql start
-#          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
 
       - name: Install WordPress environment
         run: bash bin/install-wp-tests.sh wordpress_tests root root
 
       - name: Execute PHPUnit tests
+        if: ${{ matrix.php >= 7.1 }}
         run: phpunit
