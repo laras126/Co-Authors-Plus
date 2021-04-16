@@ -52,7 +52,4 @@ jobs:
           mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
 
       - name: Execute PHPUnit tests
-        run: |
-          cd "/tmp/wordpress-tests-lib/src/wp-content/plugins/co-authors-plus"
-          pwd
-          phpunit
+        run: phpunit
