@@ -38,10 +38,10 @@ jobs:
         run: git clone -b master https://github.com/WordPress/WordPress-Coding-Standards.git ${{ github.workspace }}/wpcs
 
       - name: Install PHPCompatibility
-          run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibility.git ${{ github.workspace }}/PHPCompatibility
+        run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibility.git ${{ github.workspace }}/PHPCompatibility
 
       - name: Install PHPCompatibilityWP
-          run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibilityWP.git ${{ github.workspace }}/PHPCompatibilityWP
+        run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibilityWP.git ${{ github.workspace }}/PHPCompatibilityWP
 
       - name: Check PHPCS
         run: |
