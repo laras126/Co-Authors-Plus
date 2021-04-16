@@ -53,4 +53,4 @@ jobs:
       - name: Check PHPCS
         run: |
           $PHPCS_DIR/bin/phpcs --config-set installed_paths $WPCS_DIR,$PHPCompatibility,$PHPCompatibilityWP
-          $PHPCS_DIR/bin/phpcs -p -s -v -n . --standard="WordPress-VIP-Go" --extensions=php
+          $PHPCS_DIR/bin/phpcs -p -s -v -n . --standard="WordPress" --extensions=php
