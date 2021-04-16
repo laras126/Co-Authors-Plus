@@ -2,6 +2,10 @@ name: CI
 
 on: [push]
 
+env:
+  WP_TESTS_DIR: /github/home/wp-tests/wordpress-tests-lib
+  WP_CORE_DIR: /github/home/wp-tests/wordpress
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,10 +14,16 @@ jobs:
       matrix:
         php-versions: [ '7.4' ]
 #        php-versions: [ '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0' ]
+        wordpress-version: [ latest ]
         phpunit-versions: ['7.5.20']
 #        include:
 #          - php: '8.1'
 #            phpunit-versions: ['7.5.20']
+      services:
+        mysql:
+          image: mysql:5.7.27
+          env:
+            MYSQL_ROOT_PASSWORD: root
             
     steps:
       - name: Checkout
@@ -37,20 +47,8 @@ jobs:
       - name: Check PHPUnit version
         run: phpunit --version
 
-      - name: Start MySQL server
-        run: sudo service mysql start
-
-      - name: Prepare test database
-        run: |
-          export MYQSL_HOST=127.0.0.1
-          export MYSQL_TCP_PORT=${{ job.services.mysql.ports['3306'] }}
-          mysql -e 'CREATE DATABASE IF NOT EXISTS wordpress;' -uroot -proot
-          
-      - name: Install WordPress test database
-        run: bash bin/install-tests-db.sh
-
       - name: Install WordPress test suite
-        run: bash bin/install-tests.sh
+        run: bash bin/install-wp-tests.sh wordpress_test root root mysql ${{ matrix.wordpress-version }}
 
       - name: Execute PhpUnit tests
         if: ${{ matrix.php >= 7.1 }}
