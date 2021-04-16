@@ -4,12 +4,16 @@ on: [push]
 
 jobs:
   run:
-    runs-on: ${{ matrix.operating-system }}
+    runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        operating-system: [ubuntu-latest]
-        php-versions: ['7.2', '7.3', '7.4']
-    name: PHP ${{ matrix.php-versions }} test on ${{ matrix.operating-system }}        
+        php: [ '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0' ]
+        allowed_failure: [ false ]
+        include:
+          - php: '8.1'
+            allowed_failure: true
+            
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -18,26 +22,25 @@ jobs:
         uses: shivammathur/setup-php@v1
         with:
           php-version: ${{ matrix.php-versions }}
-          extension-csv: mbstring, intl #optional, setup extensions
-          ini-values-csv: post_max_size=256M, short_open_tag=On #optional, setup php.ini configuration
-          coverage: xdebug #optional, setup coverage driver
-          pecl: false #optional, setup PECL
 
       - name: Check PHP Version
         run: php -v
 
-      - name: Install Composer
-        run: composer install --optimize-autoloader --prefer-dist
-        
-      - name: Install MySQL
-        uses: mirromutth/mysql-action@v1.1
-        with:
-          mysql root password: 'root'
-          mysql user: 'root'
-          mysql password: 'root'
+      - name: Install PHPUnit
+        uses: php-actions/phpunit@v2
 
-      - name: Install WordPress test environment
-        run: bash bin/install-wp-tests.sh wordpress_test root root localhost latest
+      - name: Check PHPUnit version
+        run: phpunit --version
 
-      - name: Execute PHPUnit tests
-        run: ./vendor/bin/phpunit
+      - name: Start MySQL service
+        run: sudo systemctl start mysql.service
+
+      - name: Install WordPress test database
+        run: bash bin/install-tests-db.sh
+
+      - name: Install WordPress test suite
+        run: bash bin/install-tests.sh
+
+      - name: Execute PhpUnit tests
+        if: ${{ matrix.php >= 7.1 }}
+        run: phpunit
