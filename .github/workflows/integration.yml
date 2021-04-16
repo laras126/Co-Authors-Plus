@@ -20,9 +20,9 @@ jobs:
 #          - php: 7.0.33
 #            wordpress: 4.9
 #            phpunit: 6.5.14
-#          - php: 5.6.20
+#          - php: 5.6
 #            wordpress: 4.7
-#            phpunit: 5.7.27
+#            phpunit: 5.0
 
     name: PHP ${{ matrix.php }} tests in WP ${{ matrix.wordpress }}
     steps:
@@ -34,17 +34,21 @@ jobs:
           tools: phpunit:${{ matrix.phpunit }}
 
       - name: Install WordPress environment
-        run: |
-          export WP_DEVELOP_DIR=/tmp/wordpress-tests-lib/
-          git clone --depth=50 --branch="${{ matrix.wordpress }}" git://develop.git.wordpress.org/ /tmp/wordpress-tests-lib
-          cd ..
-          cp -r "${GITHUB_REPOSITORY#*/}" "/tmp/wordpress-tests-lib/src/wp-content/plugins/co-authors-plus"
-          cd /tmp/wordpress-tests-lib/
-          pwd
-          cp wp-tests-config-sample.php wp-tests-config.php
-          sed -i "s/youremptytestdbnamehere/wordpress_tests/" wp-tests-config.php
-          sed -i "s/yourusernamehere/root/" wp-tests-config.php
-          sed -i "s/yourpasswordhere/root/" wp-tests-config.php
+        run: bash bin/install-wp-tests.sh
+
+
+#      - name: Install WordPress environment
+#        run: |
+#          export WP_DEVELOP_DIR=/tmp/wordpress-tests-lib/
+#          git clone --depth=50 --branch="${{ matrix.wordpress }}" git://develop.git.wordpress.org/ /tmp/wordpress-tests-lib
+#          cd ..
+#          cp -r "${GITHUB_REPOSITORY#*/}" "/tmp/wordpress-tests-lib/src/wp-content/plugins/co-authors-plus"
+#          cd /tmp/wordpress-tests-lib/
+#          pwd
+#          cp wp-tests-config-sample.php wp-tests-config.php
+#          sed -i "s/youremptytestdbnamehere/wordpress_tests/" wp-tests-config.php
+#          sed -i "s/yourusernamehere/root/" wp-tests-config.php
+#          sed -i "s/yourpasswordhere/root/" wp-tests-config.php
 
       - name: Create MySQL database
         run: |
