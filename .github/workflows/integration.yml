@@ -14,12 +14,12 @@ jobs:
             phpunit: 7.5.20
           - php: 7.3
             phpunit: 7.5.20
-          - php: 7.1
-            phpunit: 7.5.20
-          - php: 7.0
-            phpunit: 5.0
-          - php: 5.6
-            phpunit: 5.0
+#          - php: 7.1
+#            phpunit: 7.5.20
+#          - php: 7.0
+#            phpunit: 5.0
+#          - php: 5.6
+#            phpunit: 5.0
 
     name: PHP ${{ matrix.php }}
     steps:
@@ -31,8 +31,7 @@ jobs:
           tools: phpunit:${{ matrix.phpunit }}
 
       - name: Start MySQL service
-        run: |
-          sudo /etc/init.d/mysql start
+        run: sudo /etc/init.d/mysql start
 
       - name: Install WordPress environment
         run: bash bin/install-wp-tests.sh wordpress_tests root root
@@ -40,3 +39,6 @@ jobs:
       - name: Execute PHPUnit tests
         if: ${{ matrix.php >= 7.1 }}
         run: phpunit
+
+      - name: Stop MySQL service
+        run: sudo /etc/init.d/mysql stop
