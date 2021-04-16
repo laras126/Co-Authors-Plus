@@ -37,14 +37,15 @@ jobs:
       - name: Install PHPCS
         run: git clone -b master https://github.com/WordPress/WordPress-Coding-Standards.git ${{ github.workspace }}/wpcs
 
-      - name: Install PHPCompatibility
-        run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibility.git ${{ github.workspace }}/PHPCompatibility
-
-      - name: Install PHPCompatibilityWP
-        run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibilityWP.git ${{ github.workspace }}/PHPCompatibilityWP
+#      - name: Install PHPCompatibility
+#        run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibility.git ${{ github.workspace }}/PHPCompatibility
+#
+#      - name: Install PHPCompatibilityWP
+#        run: git clone -b develop git@github.com:PHPCompatibility/PHPCompatibilityWP.git ${{ github.workspace }}/PHPCompatibilityWP
 
       - name: Check PHPCS
         run: |
-          phpcs --config-set installed_paths ${{ github.workspace }}/wpcs,${{ github.workspace }}/PHPCompatibility,${{ github.workspace }}/PHPCompatibilityWP
+          phpcs --config-set installed_paths ${{ github.workspace }}/wpcs
+#          phpcs --config-set installed_paths ${{ github.workspace }}/wpcs,${{ github.workspace }}/PHPCompatibility,${{ github.workspace }}/PHPCompatibilityWP
           phpcs -i
           phpcs -q --report=checkstyle . | cs2pr 
