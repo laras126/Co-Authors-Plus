@@ -2,8 +2,6 @@ name: CI
 
 on: [push]
 
-name: PHPUnit
-
 jobs:
   build-test:
     runs-on: ubuntu-latest
