@@ -34,8 +34,7 @@ jobs:
           tools: phpunit:${{ matrix.phpunit }}
 
       - name: Install WordPress environment
-        run: bash bin/install-wp-tests.sh
-
+        run: bash bin/install-wp-tests.sh wordpress_tests root root
 
 #      - name: Install WordPress environment
 #        run: |
@@ -50,10 +49,10 @@ jobs:
 #          sed -i "s/yourusernamehere/root/" wp-tests-config.php
 #          sed -i "s/yourpasswordhere/root/" wp-tests-config.php
 
-      - name: Create MySQL database
-        run: |
-          sudo /etc/init.d/mysql start
-          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
+#      - name: Create MySQL database
+#        run: |
+#          sudo /etc/init.d/mysql start
+#          mysql -u root -proot -e "CREATE DATABASE wordpress_tests;"
 
       - name: Execute PHPUnit tests
         run: phpunit
